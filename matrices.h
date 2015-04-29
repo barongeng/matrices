@@ -15,6 +15,9 @@ class matrix
     typedef T type;
     using matrix_data = typename detail::vector_oriented_matrix_data<T, Rows, Cols, MatrixOrientation>::type;
 
+    static int const cols = Cols;
+    static int const rows = Rows;
+
   public:
     matrix() = default;
 
@@ -63,16 +66,6 @@ class matrix
             }
         }
         return true;
-    }
-
-    int const cols() const
-    {
-        return Cols;
-    }
-
-    int const rows() const
-    {
-        return Rows;
     }
 
     friend std::ostream &operator<<(std::ostream &os, matrix<T, Rows, Cols, MatrixOrientation> const &matrix)

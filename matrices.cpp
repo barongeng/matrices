@@ -98,11 +98,11 @@ void test()
             return res;
         };
 
-        std::cout << "Running mixed-orientation " << m1.cols() << 'x' << m1.rows() << " by " << m4.cols() << 'x' << m4.rows() << " multiplication: ";
+        std::cout << "Running mixed-orientation " << m1.cols << 'x' << m1.rows << " by " << m4.cols << 'x' << m4.rows << " multiplication: ";
         auto r3 = time_it(multiply_mixed_orientation);
-        std::cout << "Running row-oriented " << m1.cols() << 'x' << m1.rows() << " by " << m2.cols() << 'x' << m2.rows() << " multiplication: ";
+        std::cout << "Running row-oriented " << m1.cols << 'x' << m1.rows << " by " << m2.cols << 'x' << m2.rows << " multiplication: ";
         auto r1 = time_it(multiply_row_oriented);
-        std::cout << "Running column-oriented " << m3.cols() << 'x' << m3.rows() << " by " << m4.cols() << 'x' << m4.rows() << " multiplication: ";
+        std::cout << "Running column-oriented " << m3.cols << 'x' << m3.rows << " by " << m4.cols << 'x' << m4.rows << " multiplication: ";
         auto r2 = time_it(multiply_column_oriented);
 
         if (r1 != r2  &&  r2 != r3)
