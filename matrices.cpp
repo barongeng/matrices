@@ -51,15 +51,15 @@ void test()
         std::uniform_int_distribution<> dis(1, 6);
 
 #ifdef NDEBUG
-#define DIM1 10000
-#define DIM2 4000
-#define DIM3 20000
-typedef float element_t;
+        unsigned const DIM1 = 10000;
+        unsigned const DIM2 = 4000;
+        unsigned const DIM3 = 20000;
+        typedef float element_t;
 #else
-#define DIM1 10000
-#define DIM2 4000
-#define DIM3 20000
-typedef int element_t;
+        unsigned const DIM1 = 10000;
+        unsigned const DIM2 = 4000;
+        unsigned const DIM3 = 20000;
+        typedef int element_t;
 #endif
 
         element_t (&a)[DIM1][DIM2] = (element_t (&)[DIM1][DIM2])*(new element_t[DIM1][DIM2]);
