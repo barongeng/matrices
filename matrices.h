@@ -12,8 +12,8 @@ template<typename T, int Rows, int Cols, typename MatrixOrientation=RowOriented>
 class matrix
 {
   public:
-    typedef T type;
-    using matrix_data = typename detail::vector_oriented_matrix_data<T, Rows, Cols, MatrixOrientation>::type;
+    typedef T value_type;
+    using matrix_data = typename detail::vector_oriented_matrix_data<T, Rows, Cols, MatrixOrientation>::value_type;
 
     static int const cols = Cols;
     static int const rows = Rows;
@@ -21,7 +21,7 @@ class matrix
   public:
     matrix() = default;
 
-    matrix(type const (&data)[Rows][Cols])
+    matrix(value_type const (&data)[Rows][Cols])
     {
         detail::assign<T, Rows, Cols, MatrixOrientation>()(data_, data);
     }
@@ -53,7 +53,7 @@ class matrix
     template<typename T2, int R2, int C2, typename O2>
     bool const is_equal(matrix<T2,R2,C2,O2> const &other) const
     {
-        static_assert(std::is_same<type, T2>::value, "Matrices have different types");
+        static_assert(std::is_same<value_type, T2>::value, "Matrices have different types");
         static_assert(Rows == R2, "Matrices have different number of rows");
         static_assert(Cols == C2, "Matrices have different number of columns");
 
