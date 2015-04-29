@@ -8,22 +8,54 @@
 
 namespace matrices {
 
+template<typename MatrixOrientation>
+struct inverse_orientation;
+
+template<>
+struct inverse_orientation<ColumnOriented>
+{
+    typedef RowOriented type;
+};
+
+template<>
+struct inverse_orientation<RowOriented>
+{
+    typedef ColumnOriented type;
+};
+
 template<typename T, int Rows, int Cols, typename MatrixOrientation=RowOriented>
 class matrix
 {
   public:
     typedef T value_type;
-    using matrix_data = typename detail::vector_oriented_matrix_data<T, Rows, Cols, MatrixOrientation>::value_type;
+    using this_type   = matrix<T, Rows, Cols, MatrixOrientation>;
 
     static int const cols = Cols;
     static int const rows = Rows;
 
   public:
-    matrix() = default;
+    matrix()                                = default;
+    matrix(this_type const &)               = default;
+    this_type &operator=(this_type const &) = default;
 
     matrix(value_type const (&data)[Rows][Cols])
     {
-        detail::assign<T, Rows, Cols, MatrixOrientation>()(data_, data);
+        detail::assign<MatrixOrientation>(data_, data);
+    }
+
+    matrix(matrix<T, Rows, Cols, typename inverse_orientation<MatrixOrientation>::type> const &other) : matrix()
+    {
+        *this = other;
+    }
+    
+    matrix(this_type &&other) : data_(std::move(other.data_))
+    {
+    }
+
+    this_type &operator=(matrix<T, Rows, Cols, typename inverse_orientation<MatrixOrientation>::type> const &other)
+    {
+        detail::assign<MatrixOrientation>(data_, array_type(other));
+        return *this;
     }
 
     template<typename Res=std::enable_if<std::is_same<MatrixOrientation,RowOriented>::value, T&>::type>
@@ -68,7 +100,41 @@ class matrix
         return true;
     }
 
-    friend std::ostream &operator<<(std::ostream &os, matrix<T, Rows, Cols, MatrixOrientation> const &matrix)
+    template<typename T2, int R2, int C2>
+    bool const is_equal(T2 const (&other)[R2][C2]) const
+    {
+        static_assert(std::is_same<value_type, T2>::value, "Matrices have different types");
+        static_assert(Rows == R2, "Matrices have different number of rows");
+        static_assert(Cols == C2, "Matrices have different number of columns");
+
+        for (int j=0; j<Rows; ++j)
+        {
+            for (int i=0; i<Cols; ++i)
+            {
+                if (at(j,i) != other[j][i])
+                    return false;
+            }
+        }
+        return true;
+    }
+
+    matrix<T, Cols, Rows, MatrixOrientation>
+    transpose1() const
+    {
+        return matrix<T, Cols, Rows, MatrixOrientation>(data_.transpose());
+    }
+
+    matrix<T, Cols, Rows, MatrixOrientation>
+    transpose2() const
+    {
+        // initialising a ColumnOriented matrix from an array will always
+        // change the orientation, because native arrays are RowOriented,
+        // so we don't need to call transpose(), just let the init ctor
+        // of matrix do the work
+        return matrix<T, Cols, Rows, MatrixOrientation>(data_);
+    }
+
+    friend std::ostream &operator<<(std::ostream &os, this_type const &matrix)
     {
         for (int j=0; j<Rows; ++j)
         {
@@ -79,7 +145,17 @@ class matrix
         return os;
     }
 
+    friend class matrix<T, Rows, Cols, typename inverse_orientation<MatrixOrientation>::type>;
+
   private:
+    typedef T const (&array_type)[Rows][Cols];
+    operator array_type() const
+    {
+        return data_;
+    }
+
+  private:
+    using matrix_data = typename detail::vector_oriented_matrix_data<T, Rows, Cols, MatrixOrientation>::value_type;
     matrix_data data_;
 };
 
@@ -116,6 +192,20 @@ bool const
 operator==(matrix<T1,R1,C1,O1> const &a, matrix<T2,R2,C2,O2> const &b)
 {
     return a.is_equal(b);
+}
+
+template<typename T1, int R1, int C1, typename O1, typename T2, int R2, int C2>
+bool const
+operator==(matrix<T1,R1,C1,O1> const &a, T2 const (&b)[R2][C2])
+{
+    return a.is_equal(b);
+}
+
+template<typename T1, int R1, int C1, typename T2, int R2, int C2, typename O2>
+bool const
+operator==(T1 const (&a)[R1][C1], matrix<T2,R2,C2,O2> const &b)
+{
+    return b.is_equal(a);
 }
 
 template<typename T1, int R1, int C1, typename O1, typename T2, int R2, int C2, typename O2>

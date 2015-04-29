@@ -16,30 +16,35 @@ class matrix_data
 {
   public:
     typedef T value_type;
+    typedef T const (&array_type)[Rows][Cols];
 
-    matrix_data &operator=(matrix_data const &) = delete;
-
-  public:
     matrix_data() : data_(new value_type[Rows*Cols])
     {
     }
 
-    matrix_data(value_type const (&data)[Rows][Cols]) : matrix_data()
-    {
-        copy(data);
-    }
-
-    matrix_data(matrix_data &&other) : data_(std::move(other.data_))
-    {
-    }
-
     matrix_data(matrix_data const &other) : matrix_data()
+    {
+        *this = other;
+    }
+
+    matrix_data(matrix_data &&other)
+    {
+        swap(data_, other.data_);
+    }
+
+    matrix_data &operator=(matrix_data const &other)
     {
         using std::copy;
         copy(
             other.data_.get(),
             other.data_.get()+(Rows*Cols)+1,
             data_.get());
+        return *this;
+    }
+
+    operator array_type() const
+    {
+        return reinterpret_cast<array_type>(*data_.get());
     }
 
     void copy(value_type const (&data)[Rows][Cols])
@@ -56,6 +61,21 @@ class matrix_data
         for (int j=0; j<Rows; j++)
             for (int i=0; i<Cols; i++)
                 *ptr++ = data[i][j];
+    }
+
+    friend class matrix_data<T, Cols, Rows>;
+    matrix_data<T, Cols, Rows>
+    transpose() const
+    {
+        matrix_data<T, Cols, Rows> result;
+
+        value_type      *dst = result.data_.get();
+        array_type const src = *this;
+        for (int i=0; i<Cols; i++)
+            for (int j=0; j<Rows; j++)
+                *dst++ = src[j][i];
+
+        return result;
     }
 
     value_type &get_at(int j, int i)
@@ -94,26 +114,34 @@ struct vector_oriented_matrix_data<T, Rows, Cols, ColumnOriented>
 };
 
 
-template<typename T, int Rows, int Cols, typename Orientation>
-struct assign;
+template<typename T1, typename T2, bool ChangeOrientation>
+struct assigner;
 
-template<typename T, int Rows, int Cols>
-struct assign<T,Rows,Cols,RowOriented>
+template<typename T1, typename T2>
+struct assigner<T1, T2, false>
 {
-    void operator()(typename detail::vector_oriented_matrix_data<T, Rows, Cols, RowOriented>::value_type &dest, T const (&data)[Rows][Cols])
+    void operator()(T1 &dest, T2 const &data)
     {
         dest.copy(data);
     }
 };
 
-template<typename T, int Rows, int Cols>
-struct assign<T,Rows,Cols,ColumnOriented>
+template<typename T1, typename T2>
+struct assigner<T1, T2, true>
 {
-    void operator()(typename detail::vector_oriented_matrix_data<T, Rows, Cols, ColumnOriented>::value_type &dest, T const (&data)[Rows][Cols])
+    void operator()(T1 &dest, T2 const &data)
     {
         dest.change_orientation(data);
     }
 };
+
+template<typename Orientation, typename T1, typename T2, int Rows, int Cols>
+void assign(
+    T1 &dest,
+    T2 const (&data)[Rows][Cols])
+{
+    assigner<T1, T2 const (&)[Rows][Cols], !std::is_same<Orientation, RowOriented>::value>()(dest, data);
+}
 
 }   // namespace detail
 

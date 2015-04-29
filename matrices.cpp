@@ -29,8 +29,6 @@ void test()
     std::cout << m2 << '\n';
     std::cout << m3 << '\n';
 
-
-
     int c[][3] = { { 3, 4, 2 } };
     int d[][4] = { { 13, 9, 7, 15}, { 8, 7, 4, 6}, { 6, 4, 0, 3} };
     auto m4 = make_matrix(c);
@@ -43,7 +41,41 @@ void test()
     auto m7 = make_column_oriented_matrix(a);
     auto m8 = make_column_oriented_matrix(b);
     auto m9 = m7 * m8;
+    std::cout << m7 << '\n';
+    std::cout << m8 << '\n';
     std::cout << m9 << '\n';
+
+
+    matrix<int, 3, 4, RowOriented> m10(d);              // data init ctor
+    matrix<int, 3, 4, RowOriented> m11(m10);            // copy ctor
+    matrix<int, 3, 4, RowOriented> m12 = m10;
+    matrix<int, 3, 4, RowOriented> m13 { m10 };
+    matrix<int, 3, 4, RowOriented> m14 = { m10 };
+    std::cout << m10 << '\n';
+
+    matrix<int, 3, 4, ColumnOriented> m15(m10);         // template copy ctor
+    matrix<int, 3, 4, ColumnOriented> m16 = m10;
+    matrix<int, 3, 4, ColumnOriented> m17 { m10 };
+    matrix<int, 3, 4, ColumnOriented> m18 = { m10 };
+    m18 = m10;
+    assert(m10 == d);
+    assert(d == m11);
+    assert(m10 == m12);
+    assert(m10 == m13);
+    assert(m10 == m14);
+
+    assert(m15 == d);
+    assert(d == m16);
+    assert(m15 == m17);
+    assert(m15 == m18);
+
+    assert(m15 == m10);
+    assert(m10 == m15);
+    std::cout << m18 << '\n';
+
+    std::cout << m10 << '\n' << m10.transpose1() << '\n';
+    std::cout << m18 << '\n' << m18.transpose2() << '\n';
+
 
     auto big_matrix_test = []() {
         std::random_device rd;
