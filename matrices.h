@@ -8,27 +8,13 @@
 
 namespace matrices {
 
-template<typename MatrixOrientation>
-struct inverse_orientation;
-
-template<>
-struct inverse_orientation<ColumnOriented>
-{
-    typedef RowOriented type;
-};
-
-template<>
-struct inverse_orientation<RowOriented>
-{
-    typedef ColumnOriented type;
-};
-
 template<typename T, int Rows, int Cols, typename MatrixOrientation=RowOriented>
 class matrix
 {
   public:
     typedef T value_type;
-    using this_type   = matrix<T, Rows, Cols, MatrixOrientation>;
+    using determinant_value_type = typename detail::determinant_value_type<T>::type;
+    using this_type = matrix<T, Rows, Cols, MatrixOrientation>;
 
     static int const cols = Cols;
     static int const rows = Rows;
@@ -43,7 +29,7 @@ class matrix
         detail::assign<MatrixOrientation>(data_, data);
     }
 
-    matrix(matrix<T, Rows, Cols, typename inverse_orientation<MatrixOrientation>::type> const &other) : matrix()
+    matrix(matrix<T, Rows, Cols, typename detail::inverse_orientation<MatrixOrientation>::type> const &other) : matrix()
     {
         *this = other;
     }
@@ -57,7 +43,7 @@ class matrix
         *this = value;
     }
 
-    this_type &operator=(matrix<T, Rows, Cols, typename inverse_orientation<MatrixOrientation>::type> const &other)
+    this_type &operator=(matrix<T, Rows, Cols, typename detail::inverse_orientation<MatrixOrientation>::type> const &other)
     {
         detail::assign<MatrixOrientation>(data_, array_type(other));
         return *this;
@@ -98,6 +84,12 @@ class matrix
     this_type &operator/=(T const &operand)
     {
         for_each_parallel([&operand](T &value) { value /= operand; });
+        return *this;
+    }
+
+    this_type &operator-()
+    {
+        for_each_parallel([](T &value) { value = -value; });
         return *this;
     }
 
@@ -194,6 +186,70 @@ class matrix
             });
     }
 
+    determinant_value_type determinant()
+    {
+        static_assert(Rows == Cols, "Determinant is only valid for square matrices");
+
+        // det(M) = det(L) * det(U), which for triangular matrices
+        /// is just the product of the entries in their diagonal.
+        auto lu = lu_decomposition();
+
+        determinant_value_type product = static_cast<determinant_value_type>(1);
+        for (int i=0; i<Rows; ++i)
+        {
+            product *= lu.first.at(i,i);
+            product *= lu.second.at(i,i);
+        }
+        return product;
+    }
+
+    // from http://www.sanfoundry.com/cpp-program-perform-lu-decomposition-any-matrix/
+    std::pair<
+        matrix<determinant_value_type, Rows, Cols, MatrixOrientation>,
+        matrix<determinant_value_type, Rows, Cols, MatrixOrientation>>
+    lu_decomposition()
+    {
+        static_assert(Rows == Cols, "LU Decomposition is only valid for square matrices");
+        int n = Rows;
+
+        matrix<determinant_value_type, Rows, Cols, MatrixOrientation> l;
+        matrix<determinant_value_type, Rows, Cols, MatrixOrientation> u;
+
+        int i = 0, j = 0, k = 0;
+        for (i = 0; i < n; i++)
+        {
+            for (j = 0; j < n; j++)
+            {
+                if (j < i)
+                    l.at(j,i) = 0;
+                else
+                {
+                    l.at(j,i) = static_cast<determinant_value_type>(at(j,i));
+                    for (k = 0; k < i; k++)
+                    {
+                        l.at(j,i) = l.at(j,i) - l.at(j,k) * u.at(k,i);
+                    }
+                }
+            }
+
+            for (j = 0; j < n; j++)
+            {
+                if (j < i)
+                    u.at(i,j) = 0;
+                else if (j == i)
+                    u.at(i,j) = 1;
+                else
+                {
+                    u.at(i,j) = at(i,j) / l.at(i,i);
+                    for (k = 0; k < i; k++)
+                    {
+                        u.at(i,j) = u.at(i,j) - ((l.at(i,k) * u.at(k,j)) / l.at(i,i));
+                    }
+                }
+            }
+        }
+        return { l, u };
+    }
     template<typename Orientation=MatrixOrientation>
     matrix<T, Cols, Rows, Orientation>
     transpose() const;
@@ -227,7 +283,7 @@ class matrix
         return os;
     }
 
-    friend class matrix<T, Rows, Cols, typename inverse_orientation<MatrixOrientation>::type>;
+    friend class matrix<T, Rows, Cols, typename detail::inverse_orientation<MatrixOrientation>::type>;
 
   private:
     typedef T const (&array_type)[Rows][Cols];

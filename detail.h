@@ -98,6 +98,43 @@ class matrix_data
 
 
 
+template<typename MatrixOrientation>
+struct inverse_orientation;
+
+template<>
+struct inverse_orientation<ColumnOriented>
+{
+    typedef RowOriented type;
+};
+
+template<>
+struct inverse_orientation<RowOriented>
+{
+    typedef ColumnOriented type;
+};
+
+
+
+template<typename T>
+struct determinant_value_type
+{
+    typedef float type;
+};
+
+template<>
+struct determinant_value_type<double>
+{
+    typedef double type;
+};
+
+template<>
+struct determinant_value_type<long double>
+{
+    typedef long double type;
+};
+
+
+
 template<typename T, int Rows, int Cols, typename MatrixOrientation>
 struct vector_oriented_matrix_data;
 

@@ -109,11 +109,14 @@ void test()
     std::cout << m10 << '\n' << m10.transpose() << '\n';
     std::cout << m18 << '\n' << m18.transpose() << '\n';
 
-    matrix<int, 13000, 4000, RowOriented>    m20r = 0;
-    matrix<int, 13000, 4000, ColumnOriented> m20c = 0;
-    test_matrix_operators("RowOriented   ", m20r);
-    test_matrix_operators("ColumnOriented", m20c);
-    check_and_throw(m20r == m20c);
+    long double lu_test_data[3][3] = { {6, 1, 1}, { 4, -2, 5 }, { 2, 8, 7 } };
+    //int lu_test_data[3][3] = { {1, 1, -1}, { 2, -1, 3 }, { 3, 1, -1 } };
+    auto lu_test = make_matrix(lu_test_data);
+    std::cout << lu_test << '\n';
+    auto lu = lu_test.lu_decomposition();
+    std::cout << lu.first << '\n';
+    std::cout << lu.second << '\n';
+    std::cout << lu_test.determinant() << '\n';
 
     std::cout << matrix<double, 4, 4, ColumnOriented>::identity() << '\n';
     std::cout << matrix<double, 4, 4, RowOriented>::identity().transpose() << '\n';
@@ -130,6 +133,7 @@ void test()
 
     m19 -= 9;
     std::cout << m19 << '\n';
+    std::cout << -m19 << '\n';
     m19 = m19 - 17;
     std::cout << m19 << '\n';
 
@@ -148,6 +152,11 @@ void test()
     m19 = m19 / 29;
     std::cout << m19 << '\n';
 
+    matrix<int, 13000, 4000, RowOriented>    m20r = 0;
+    matrix<int, 13000, 4000, ColumnOriented> m20c = 0;
+    test_matrix_operators("RowOriented   ", m20r);
+    test_matrix_operators("ColumnOriented", m20c);
+    check_and_throw(m20r == m20c);
 
     auto big_matrix_test = []() {
         std::random_device rd;
