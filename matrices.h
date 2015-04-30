@@ -52,9 +52,52 @@ class matrix
     {
     }
 
+    matrix(T const &value) : matrix()
+    {
+        *this = value;
+    }
+
     this_type &operator=(matrix<T, Rows, Cols, typename inverse_orientation<MatrixOrientation>::type> const &other)
     {
         detail::assign<MatrixOrientation>(data_, array_type(other));
+        return *this;
+    }
+
+    this_type &operator=(T const &operand)
+    {
+        // assignment is faster with vectorization that with threads
+        for_each_noparallel([&operand](T &value) { value = operand; });
+        return *this;
+    }
+
+    this_type &operator=(std::function<T (void)> fn)
+    {
+        // no threading; fn() may not be thread safe
+        for_each_noparallel([&fn](T &value) { value = fn(); });
+        return *this;
+    }
+
+    this_type &operator-=(T const &operand)
+    {
+        for_each_parallel([&operand](T &value) { value -= operand; });
+        return *this;
+    }
+
+    this_type &operator+=(T const &operand)
+    {
+        for_each_parallel([&operand](T &value) { value += operand; });
+        return *this;
+    }
+
+    this_type &operator*=(T const &operand)
+    {
+        for_each_parallel([&operand](T &value) { value *= operand; });
+        return *this;
+    }
+
+    this_type &operator/=(T const &operand)
+    {
+        for_each_parallel([&operand](T &value) { value /= operand; });
         return *this;
     }
 
@@ -80,6 +123,34 @@ class matrix
     Res at(int row, int col, ColumnOriented const& =MatrixOrientation()) const
     {
         return data_.get_at(col,row);
+    }
+
+    template<typename Fn>
+    void for_each_parallel(Fn fn)
+    {
+#pragma omp parallel for
+        for (int j=0; j<Rows; ++j)
+            for (int i=0; i<Cols; ++i)
+                fn(at(j,i));
+    }
+
+    template<typename Fn>
+    void for_each_noparallel(Fn fn)
+    {
+        for (int j=0; j<Rows; ++j)
+            for (int i=0; i<Cols; ++i)
+                fn(at(j,i));
+    }
+
+    static this_type identity()
+    {
+        static_assert(Rows == Cols, "Identity matrix is only valid for square matrices");
+
+        this_type result = 0;
+#pragma omp parallel for
+        for (int j=0; j<Rows; ++j)
+            result.at(j,j) = static_cast<T>(1);
+        return result;
     }
 
     template<int R2, int C2, typename T, typename Fn>
@@ -224,6 +295,34 @@ bool const
 operator!=(matrix<T1,R1,C1,O1> const &a, matrix<T2,R2,C2,O2> const &b)
 {
     return !(a == b);
+}
+
+template<typename T, int R, int C, typename O>
+matrix<T,R,C,O>
+operator-(matrix<T,R,C,O> a, T const &b)
+{
+    return a -= b;
+}
+
+template<typename T, int R, int C, typename O>
+matrix<T,R,C,O>
+operator+(matrix<T,R,C,O> a, T const &b)
+{
+    return a += b;
+}
+
+template<typename T, int R, int C, typename O>
+matrix<T,R,C,O>
+operator*(matrix<T,R,C,O> a, T const &b)
+{
+    return a *= b;
+}
+
+template<typename T, int R, int C, typename O>
+matrix<T,R,C,O>
+operator/(matrix<T,R,C,O> a, T const &b)
+{
+    return a /= b;
 }
 
 template<typename T, int Rows, int Cols>

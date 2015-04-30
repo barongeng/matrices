@@ -5,6 +5,7 @@
 #include "stdafx.h"
 #include <cassert>
 #include <functional>
+#include <string>
 #include <memory>
 #include <iostream>
 #include <iomanip>
@@ -17,6 +18,38 @@
 #include "matrices.h"
 
 namespace matrices {
+
+template<typename Fn>
+void timer(std::string const &msg, Fn fn)
+{
+    std::cout << msg << ": ";
+    auto start = std::chrono::high_resolution_clock::now();
+    fn();
+    auto end = std::chrono::high_resolution_clock::now();
+    std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << " ms\n";
+}
+
+template<typename Matrix>
+void test_matrix_operators(std::string const &msg, Matrix &m)
+{
+    timer(msg + " matrix Assignment         ", [&]{ m = 189; });
+    timer(msg + " matrix Addition           ", [&]{ m + 11; });
+    timer(msg + " matrix Self Addition      ", [&]{ m += 11; });
+    timer(msg + " matrix Subtraction        ", [&]{ m - 11; });
+    timer(msg + " matrix Self Subtraction   ", [&]{ m -= 11; });
+    timer(msg + " matrix Division           ", [&]{ m / 4; });
+    timer(msg + " matrix Self Division      ", [&]{ m /= 2; });
+    timer(msg + " matrix Multiplication     ", [&]{ m * 2; });
+    timer(msg + " matrix Self Multiplication", [&]{ m *= 2; });
+    //timer(msg + " matrix muliply by itself, w/ threads", [&m]{ multiply(m, m.transpose());   });
+}
+
+void check_and_throw(bool const value)
+{
+    assert(value);
+    if (!value)
+        throw std::runtime_error("ASSERTion failed.");
+}
 
 void test()
 {
@@ -58,23 +91,62 @@ void test()
     matrix<int, 3, 4, ColumnOriented> m17 { m10 };
     matrix<int, 3, 4, ColumnOriented> m18 = { m10 };
     m18 = m10;
-    assert(m10 == d);
-    assert(d == m11);
-    assert(m10 == m12);
-    assert(m10 == m13);
-    assert(m10 == m14);
+    check_and_throw(m10 == d);
+    check_and_throw(d == m11);
+    check_and_throw(m10 == m12);
+    check_and_throw(m10 == m13);
+    check_and_throw(m10 == m14);
 
-    assert(m15 == d);
-    assert(d == m16);
-    assert(m15 == m17);
-    assert(m15 == m18);
+    check_and_throw(m15 == d);
+    check_and_throw(d == m16);
+    check_and_throw(m15 == m17);
+    check_and_throw(m15 == m18);
 
-    assert(m15 == m10);
-    assert(m10 == m15);
+    check_and_throw(m15 == m10);
+    check_and_throw(m10 == m15);
     std::cout << m18 << '\n';
 
     std::cout << m10 << '\n' << m10.transpose() << '\n';
     std::cout << m18 << '\n' << m18.transpose() << '\n';
+
+    matrix<int, 13000, 4000, RowOriented>    m20r = 0;
+    matrix<int, 13000, 4000, ColumnOriented> m20c = 0;
+    test_matrix_operators("RowOriented   ", m20r);
+    test_matrix_operators("ColumnOriented", m20c);
+    check_and_throw(m20r == m20c);
+
+    std::cout << matrix<double, 4, 4, ColumnOriented>::identity() << '\n';
+    std::cout << matrix<double, 4, 4, RowOriented>::identity().transpose() << '\n';
+
+    matrix<int, 8, 8, RowOriented> m19 = 77;
+    std::cout << m19 << '\n';
+    m19 = []() -> int {
+        static int i=0;
+        return ++i;
+    };
+    std::cout << m19 << '\n';
+    check_and_throw((m19 * matrix<int, 8, 8, RowOriented>::identity()) == m19);
+    check_and_throw((m19 * matrix<int, 8, 8, ColumnOriented>::identity()) == m19);
+
+    m19 -= 9;
+    std::cout << m19 << '\n';
+    m19 = m19 - 17;
+    std::cout << m19 << '\n';
+
+    m19 += 7;
+    std::cout << m19 << '\n';
+    m19 = m19 + 29;
+    std::cout << m19 << '\n';
+
+    m19 *= 2;
+    std::cout << m19 << '\n';
+    m19 = m19 * 29;
+    std::cout << m19 << '\n';
+
+    m19 /= 2;
+    std::cout << m19 << '\n';
+    m19 = m19 / 29;
+    std::cout << m19 << '\n';
 
 
     auto big_matrix_test = []() {
