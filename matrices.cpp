@@ -73,8 +73,8 @@ void test()
     assert(m10 == m15);
     std::cout << m18 << '\n';
 
-    std::cout << m10 << '\n' << m10.transpose1() << '\n';
-    std::cout << m18 << '\n' << m18.transpose2() << '\n';
+    std::cout << m10 << '\n' << m10.transpose() << '\n';
+    std::cout << m18 << '\n' << m18.transpose() << '\n';
 
 
     auto big_matrix_test = []() {

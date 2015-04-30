@@ -118,14 +118,20 @@ class matrix
         return true;
     }
 
-    matrix<T, Cols, Rows, MatrixOrientation>
-    transpose1() const
+    template<typename Orientation=MatrixOrientation>
+    matrix<T, Cols, Rows, Orientation>
+    transpose() const;
+
+    template<>
+    matrix<T, Cols, Rows, RowOriented>
+    transpose() const
     {
         return matrix<T, Cols, Rows, MatrixOrientation>(data_.transpose());
     }
 
-    matrix<T, Cols, Rows, MatrixOrientation>
-    transpose2() const
+    template<>
+    matrix<T, Cols, Rows, ColumnOriented>
+    transpose() const
     {
         // initialising a ColumnOriented matrix from an array will always
         // change the orientation, because native arrays are RowOriented,
@@ -216,17 +222,17 @@ operator!=(matrix<T1,R1,C1,O1> const &a, matrix<T2,R2,C2,O2> const &b)
 }
 
 template<typename T, int Rows, int Cols>
-matrix<T,Rows,Cols,RowOriented>
+matrix<T, Rows, Cols,RowOriented>
 make_matrix(T const (&data)[Rows][Cols])
 {
-    return matrix<T,Rows,Cols,RowOriented>(data);
+    return matrix<T, Rows, Cols,RowOriented>(data);
 }
 
 template<typename T, int Rows, int Cols>
-matrix<T,Rows,Cols,ColumnOriented>
+matrix<T, Rows, Cols,ColumnOriented>
 make_column_oriented_matrix(T const (&data)[Rows][Cols])
 {
-    return matrix<T,Rows,Cols,ColumnOriented>(data);
+    return matrix<T, Rows, Cols,ColumnOriented>(data);
 }
 
 }   // namespace matrices
