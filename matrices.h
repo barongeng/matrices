@@ -82,10 +82,9 @@ class matrix
         return data_.get_at(col,row);
     }
 
-    template<typename T2, int R2, int C2, typename O2>
-    bool const is_equal(matrix<T2,R2,C2,O2> const &other) const
+    template<int R2, int C2, typename T, typename Fn>
+    bool const is_equal(T const &other, Fn fn) const
     {
-        static_assert(std::is_same<value_type, T2>::value, "Matrices have different types");
         static_assert(Rows == R2, "Matrices have different number of rows");
         static_assert(Cols == C2, "Matrices have different number of columns");
 
@@ -93,29 +92,35 @@ class matrix
         {
             for (int i=0; i<Cols; ++i)
             {
-                if (at(j,i) != other.at(j,i))
+                if (at(j,i) != fn(other, j, i))
                     return false;
             }
         }
         return true;
     }
 
+    template<typename T2, int R2, int C2, typename O2>
+    bool const is_equal(matrix<T2,R2,C2,O2> const &other) const
+    {
+        static_assert(std::is_same<value_type, T2>::value, "Matrices have different types");
+
+        return is_equal<R2, C2>(
+            other,
+            [](matrix<T2,R2,C2,O2> const &other, int j, int i) -> T2 {
+                return other.at(j,i);
+            });
+    }
+
     template<typename T2, int R2, int C2>
     bool const is_equal(T2 const (&other)[R2][C2]) const
     {
         static_assert(std::is_same<value_type, T2>::value, "Matrices have different types");
-        static_assert(Rows == R2, "Matrices have different number of rows");
-        static_assert(Cols == C2, "Matrices have different number of columns");
 
-        for (int j=0; j<Rows; ++j)
-        {
-            for (int i=0; i<Cols; ++i)
-            {
-                if (at(j,i) != other[j][i])
-                    return false;
-            }
-        }
-        return true;
+        return is_equal<R2, C2>(
+            other,
+            [](T2 const (&other)[R2][C2], int j, int i) -> T2 {
+                return other[j][i];
+            });
     }
 
     template<typename Orientation=MatrixOrientation>
