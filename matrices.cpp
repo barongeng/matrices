@@ -106,8 +106,8 @@ void test()
     check_and_throw(m10 == m15);
     std::cout << m18 << '\n';
 
-    std::cout << m10 << '\n' << m10.transpose() << '\n';
-    std::cout << m18 << '\n' << m18.transpose() << '\n';
+    std::cout << m10 << '\n' << transpose(m10) << '\n';
+    std::cout << m18 << '\n' << transpose(m18) << '\n';
 
     long double lu_test_data[3][3] = { {6, 1, 1}, { 4, -2, 5 }, { 2, 8, 7 } };
     //int lu_test_data[3][3] = { {1, 1, -1}, { 2, -1, 3 }, { 3, 1, -1 } };
@@ -116,7 +116,13 @@ void test()
     auto lu = lu_test.lu_decomposition();
     std::cout << lu.first << '\n';
     std::cout << lu.second << '\n';
-    std::cout << lu_test.determinant() << '\n';
+    assert(lu_test.determinant() == -306);
+
+    std::cout << lu_test << '\n';
+    std::cout << lu_test.transpose() << '\n';
+    auto lu_test2 = make_column_oriented_matrix(lu_test_data);
+    std::cout << lu_test2 << '\n';
+    std::cout << lu_test2.transpose() << '\n';
 
     std::cout << matrix<double, 4, 4, ColumnOriented>::identity() << '\n';
     std::cout << matrix<double, 4, 4, RowOriented>::identity().transpose() << '\n';

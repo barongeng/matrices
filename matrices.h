@@ -250,26 +250,37 @@ class matrix
         }
         return { l, u };
     }
+
     template<typename Orientation=MatrixOrientation>
-    matrix<T, Cols, Rows, Orientation>
-    transpose() const;
+    void transpose_to(matrix<T, Cols, Rows, Orientation> &other) const;
 
     template<>
-    matrix<T, Cols, Rows, RowOriented>
-    transpose() const
+    void transpose_to(matrix<T, Cols, Rows, RowOriented> &other) const
     {
-        return matrix<T, Cols, Rows, MatrixOrientation>(data_.transpose());
+        other = matrix<T, Cols, Rows, MatrixOrientation>(data_.transpose());
+    }
+
+    template<typename Res=typename std::enable_if<Rows == Cols, matrix<T, Rows, Cols, MatrixOrientation>>::type>
+    Res transpose()
+    {
+        using std::swap;
+        for (int j=0; j<Rows; ++j)
+        {
+            for (int i=j+1; i<Cols; ++i)
+                swap(at(i,j), at(j,i));
+        }
+
+        return *this;
     }
 
     template<>
-    matrix<T, Cols, Rows, ColumnOriented>
-    transpose() const
+    void transpose_to(matrix<T, Cols, Rows, ColumnOriented> &other) const
     {
         // initialising a ColumnOriented matrix from an array will always
         // change the orientation, because native arrays are RowOriented,
         // so we don't need to call transpose(), just let the init ctor
         // of matrix do the work
-        return matrix<T, Cols, Rows, MatrixOrientation>(data_);
+        other = matrix<T, Cols, Rows, MatrixOrientation>(data_);
     }
 
     friend std::ostream &operator<<(std::ostream &os, this_type const &matrix)
@@ -393,6 +404,15 @@ matrix<T, Rows, Cols,ColumnOriented>
 make_column_oriented_matrix(T const (&data)[Rows][Cols])
 {
     return matrix<T, Rows, Cols,ColumnOriented>(data);
+}
+
+template<typename T, int Rows, int Cols, typename MatrixOrientation>
+matrix<T, Cols, Rows, MatrixOrientation>
+transpose(matrix<T, Rows, Cols, MatrixOrientation> const &m)
+{
+    matrix<T, Cols, Rows, MatrixOrientation> result;
+    m.transpose_to(result);
+    return result;
 }
 
 }   // namespace matrices
