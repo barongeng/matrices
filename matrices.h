@@ -203,6 +203,15 @@ class matrix
         return product;
     }
 
+    bool const is_singular() const
+    {
+        // using the rank, when I have is more efficient
+        // http://trac.sagemath.org/attachment/ticket/12370/trac_12370_improve_is_singular.patch
+        // return rank() != Rows;
+        static_assert(Rows == Cols, "Singular is only valid for square matrices");
+        return determinant() == static_cast<determinant_value_type>(0);
+    }
+
     // from http://www.sanfoundry.com/cpp-program-perform-lu-decomposition-any-matrix/
     std::pair<
         matrix<determinant_value_type, Rows, Cols, MatrixOrientation>,
