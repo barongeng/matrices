@@ -136,7 +136,7 @@ class matrix
 
     static this_type identity()
     {
-        static_assert(Rows == Cols, "Identity matrix is only valid for square matrices");
+        static_assert(Cols == Rows, "Identity matrix is only valid for square matrices");
 
         this_type result = 0;
 #pragma omp parallel for
@@ -186,9 +186,17 @@ class matrix
             });
     }
 
-    determinant_value_type determinant()
+    void inverse()
     {
-        static_assert(Rows == Cols, "Determinant is only valid for square matrices");
+        // there's an implementation here if to look at, but I haven't used/tried it
+        // https://chi3x10.wordpress.com/2008/05/28/calculate-matrix-inversion-in-c/
+
+        static_assert(false, "Don't: see http://www.johndcook.com/blog/2010/01/19/dont-invert-that-matrix/");
+    }
+
+    determinant_value_type determinant() const
+    {
+        static_assert(Cols == Rows, "Determinant is only valid for square matrices");
 
         // det(M) = det(L) * det(U), which for triangular matrices
         /// is just the product of the entries in their diagonal.
@@ -205,20 +213,17 @@ class matrix
 
     bool const is_singular() const
     {
-        // using the rank, when I have is more efficient
-        // http://trac.sagemath.org/attachment/ticket/12370/trac_12370_improve_is_singular.patch
-        // return rank() != Rows;
-        static_assert(Rows == Cols, "Singular is only valid for square matrices");
         return determinant() == static_cast<determinant_value_type>(0);
     }
 
     // from http://www.sanfoundry.com/cpp-program-perform-lu-decomposition-any-matrix/
+    template<typename Orientation=ColumnOriented>
     std::pair<
         matrix<determinant_value_type, Rows, Cols, MatrixOrientation>,
         matrix<determinant_value_type, Rows, Cols, MatrixOrientation>>
-    lu_decomposition()
+    lu_decomposition(matrix<T, Rows, 1, Orientation> *rhs = nullptr) const
     {
-        static_assert(Rows == Cols, "LU Decomposition is only valid for square matrices");
+        static_assert(Cols == Rows, "LU Decomposition is only valid for square matrices");
         int n = Rows;
 
         matrix<determinant_value_type, Rows, Cols, MatrixOrientation> l;
@@ -241,12 +246,21 @@ class matrix
                 }
             }
 
-            for (j = 0; j < n; j++)
+            for (j = 0; j < n+(rhs?1:0); j++)
             {
                 if (j < i)
                     u.at(i,j) = 0;
                 else if (j == i)
                     u.at(i,j) = 1;
+                else if (j == n)
+                {
+                    auto ptr = rhs;
+                    ptr->at(i,0) = ptr->at(i,0) / l.at(i,i);
+                    for (k = 0; k < i; k++)
+                    {
+                        ptr->at(i,0) = ptr->at(i,0) - ((l.at(i,k) * ptr->at(k,0)) / l.at(i,i));
+                    }
+                }
                 else
                 {
                     u.at(i,j) = at(i,j) / l.at(i,i);
@@ -257,6 +271,12 @@ class matrix
                 }
             }
         }
+
+#ifndef NDEBUG
+        // the diagonal of the upper matrix must be 1s
+        for (int i=0; i<n; ++i)
+            assert(u.at(i,i) == 1);
+#endif
         return { l, u };
     }
 
@@ -297,7 +317,10 @@ class matrix
         for (int j=0; j<Rows; ++j)
         {
             for (int i=0; i<Cols; ++i)
-                os << matrix.at(j,i) << ' ';
+                os << std::setiosflags(std::ios::showpoint | std::ios::fixed | std::ios::right)
+                   << std::setprecision(4)
+                   << std::setw(8)
+                   << matrix.at(j,i) << ' ';
             os << '\n';
         }
         return os;
@@ -413,6 +436,31 @@ matrix<T, Rows, Cols,ColumnOriented>
 make_column_oriented_matrix(T const (&data)[Rows][Cols])
 {
     return matrix<T, Rows, Cols,ColumnOriented>(data);
+}
+
+// http://algorithmsincpp.blogspot.co.uk/2013/05/gaussian-elimination-with-pivoting.html
+template<typename T, int Rows, int Cols, typename O1>
+matrix<T, Rows, 1, O1>
+solve(matrix<T, Rows, Cols, O1> m, matrix<T, Rows, 1, O1> rhs)
+{
+    static_assert(Cols == Rows, "Singular is only valid for square matrices");
+    auto upper = m.lu_decomposition(&rhs).second;
+
+    // back substitution
+    // from https://www.planet-source-code.com/vb/scripts/ShowCode.asp?txtCodeId=13622&lngWId=3
+	int i=0,j=0;
+	for(i=Rows-1;i>=0;)
+	{
+		for(j=Rows-1;j>i;)
+		{
+			rhs.at(i,0)=rhs.at(i,0)-upper.at(i,j)*rhs.at(j,0);
+			j=j-1;
+		}
+		rhs.at(i,0) = rhs.at(i,0)/upper.at(i,i);
+		i=i-1;
+	}
+
+    return rhs;
 }
 
 template<typename T, int Rows, int Cols, typename MatrixOrientation>
