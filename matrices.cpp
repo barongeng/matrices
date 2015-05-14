@@ -326,6 +326,29 @@ void test_transpose()
     matrix<int, 2, 3, ColumnOriented> ct3;
     c1.transpose_to(ct3);
     std::cout << c1 << '\n' << ct3 << '\n';
+
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(1, 6);
+
+    unsigned const DIM1 = 10000;
+    unsigned const DIM2 = 4000;
+    unsigned const DIM3 = 20000;
+    float (&d)[DIM1][DIM2] = (float (&)[DIM1][DIM2])*(new float[DIM1][DIM2]);
+    for (int j=0; j<DIM1; ++j)
+        for (int i=0; i<DIM2; ++i)
+            d[j][i] = float(dis(gen));
+    auto d1  = make_matrix(d);
+    auto dt1 = transpose(d1);
+    assert(transpose(dt1) == d1);
+
+    auto d2 = make_column_oriented_matrix(d);
+    auto dt2 = transpose(d2);
+    assert(transpose(dt2) == d2);
+
+    assert(dt1 == dt2);
+    assert(transpose(dt1) == transpose(dt2));
 }
 
 }   // namespace matrices
