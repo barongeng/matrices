@@ -17,6 +17,7 @@ class matrix_data
   public:
     typedef T value_type;
     typedef T const (&array_type)[Rows][Cols];
+    typedef matrix_data<T, Rows, Cols> this_type;
 
     matrix_data() : data_(new value_type[Rows*Cols])
     {
@@ -27,12 +28,18 @@ class matrix_data
         *this = other;
     }
 
-    matrix_data(matrix_data &&other)
+    matrix_data(this_type &&other)
     {
         swap(data_, other.data_);
     }
 
-    matrix_data &operator=(matrix_data const &other)
+    this_type &operator=(this_type &&other)
+    {
+        swap(data_, other.data_);
+        return *this;
+    }
+
+    this_type &operator=(this_type const &other)
     {
         using std::copy;
         copy(
@@ -61,6 +68,22 @@ class matrix_data
         for (int j=0; j<Rows; j++)
             for (int i=0; i<Cols; i++)
                 *ptr++ = data[i][j];
+    }
+
+    this_type &transpose()
+    {
+        static_assert(Cols == Rows, "Inplace transpose is only valid on square matrices");
+
+        // a more efficient algorithm for large matrices is recursiveTranspose()
+        // http://stackoverflow.com/a/11414342/198083
+        using std::swap;
+        for (int j=0; j<Rows; ++j)
+        {
+            for (int i=j+1; i<Cols; ++i)
+                swap(get_at(i,j), get_at(j,i));
+        }
+
+        return *this;
     }
 
     friend class matrix_data<T, Cols, Rows>;

@@ -15,6 +15,7 @@ class matrix
     typedef T value_type;
     using determinant_value_type = typename detail::determinant_value_type<T>::type;
     using this_type = matrix<T, Rows, Cols, MatrixOrientation>;
+    using matrix_data_type = typename detail::vector_oriented_matrix_data<T, Rows, Cols, MatrixOrientation>::value_type;
 
     static int const cols = Cols;
     static int const rows = Rows;
@@ -23,6 +24,20 @@ class matrix
     matrix()                                = default;
     matrix(this_type const &)               = default;
     this_type &operator=(this_type const &) = default;
+    
+    matrix(this_type &&other) : data_(std::move(other.data_))
+    {
+    }
+
+    matrix(matrix_data_type &&data) : data_(std::forward<matrix_data_type>(data))
+    {
+    }
+
+    this_type &operator=(matrix_data_type &&data)
+    {
+        data_ = std::forward<matrix_data_type>(data);
+        return *this;
+    }
 
     matrix(value_type const (&data)[Rows][Cols])
     {
@@ -32,10 +47,6 @@ class matrix
     matrix(matrix<T, Rows, Cols, typename detail::inverse_orientation<MatrixOrientation>::type> const &other) : matrix()
     {
         *this = other;
-    }
-    
-    matrix(this_type &&other) : data_(std::move(other.data_))
-    {
     }
 
     matrix(T const &value) : matrix()
@@ -280,36 +291,35 @@ class matrix
         return { l, u };
     }
 
-    template<typename Orientation=MatrixOrientation>
+    template<typename Orientation>
     void transpose_to(matrix<T, Cols, Rows, Orientation> &other) const;
 
     template<>
-    void transpose_to(matrix<T, Cols, Rows, RowOriented> &other) const
+    void transpose_to(matrix<T, Cols, Rows, MatrixOrientation> &other) const
     {
-        other = matrix<T, Cols, Rows, MatrixOrientation>(data_.transpose());
-    }
-
-    template<typename Res=typename std::enable_if<Rows == Cols, matrix<T, Rows, Cols, MatrixOrientation>>::type>
-    Res transpose()
-    {
-        using std::swap;
-        for (int j=0; j<Rows; ++j)
-        {
-            for (int i=j+1; i<Cols; ++i)
-                swap(at(i,j), at(j,i));
-        }
-
-        return *this;
+        other = std::move(data_.transpose());
     }
 
     template<>
-    void transpose_to(matrix<T, Cols, Rows, ColumnOriented> &other) const
+    void transpose_to(matrix<T, Cols, Rows, typename detail::inverse_orientation<MatrixOrientation>::type> &other) const
     {
-        // initialising a ColumnOriented matrix from an array will always
-        // change the orientation, because native arrays are RowOriented,
-        // so we don't need to call transpose(), just let the init ctor
-        // of matrix do the work
-        other = matrix<T, Cols, Rows, MatrixOrientation>(data_);
+        typedef
+        matrix<T, Cols, Rows, typename detail::inverse_orientation<MatrixOrientation>::type>::matrix_data_type
+        dest_type;
+
+        // copy the data into a temporary store and move the temporary
+        // store to the result. because the matrix orientations are different,
+        // copying the raw data has the effect of transposing the data in the
+        // resulting matrix
+        dest_type dest;
+        dest  = data_;
+        other = std::move(dest);
+    }
+
+    this_type &transpose()
+    {
+        data_.transpose();
+        return *this;
     }
 
     friend std::ostream &operator<<(std::ostream &os, this_type const &matrix)
@@ -336,8 +346,7 @@ class matrix
     }
 
   private:
-    using matrix_data = typename detail::vector_oriented_matrix_data<T, Rows, Cols, MatrixOrientation>::value_type;
-    matrix_data data_;
+    matrix_data_type data_;
 };
 
 template<typename T, int I, int J, int K, typename O1, typename O2>

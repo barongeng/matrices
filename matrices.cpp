@@ -70,9 +70,9 @@ void big_matrix_test()
     unsigned const DIM3 = 20000;
     typedef float element_t;
 #else
-    unsigned const DIM1 = 10000;
-    unsigned const DIM2 = 4000;
-    unsigned const DIM3 = 20000;
+    unsigned const DIM1 = 100;
+    unsigned const DIM2 = 40;
+    unsigned const DIM3 = 200;
     typedef int element_t;
 #endif
 
@@ -296,6 +296,38 @@ void test()
     std::cout << solution << '\n';
 }
 
+void test_transpose()
+{
+    int a[][3] = { { 1, 2 }, { 3, 4 } };
+    auto m1 = make_matrix(a);
+    auto at1 = transpose(m1);
+
+    int b[][3] = { { 1, 2, 3 }, { 4, 5, 6 } };
+    auto b1 = make_matrix(b);
+    auto bt1 = transpose(b1);
+
+    matrix<int, 3, 2, RowOriented> bt2;
+    b1.transpose_to(bt2);
+    std::cout << b1 << '\n' << bt2 << '\n';
+
+    matrix<int, 3, 2, ColumnOriented> bt3;
+    b1.transpose_to(bt3);
+    std::cout << b1 << '\n' << bt3 << '\n';
+
+
+    int c[][2] = { { 7, 8 }, { 9, 10 }, { 11, 12} };
+    auto c1 = make_column_oriented_matrix(c);
+    auto ct1 = transpose(c1);
+
+    matrix<int, 2, 3, RowOriented> ct2;
+    c1.transpose_to(ct2);
+    std::cout << c1 << '\n' << ct2 << '\n';
+
+    matrix<int, 2, 3, ColumnOriented> ct3;
+    c1.transpose_to(ct3);
+    std::cout << c1 << '\n' << ct3 << '\n';
+}
+
 }   // namespace matrices
 
 
@@ -303,6 +335,7 @@ void test()
 int main(int argc, char *argv[])
 {
     matrices::test();
+    matrices::test_transpose();
     matrices::test_linear_systems();
     matrices::big_matrix_test();
 	return 0;
