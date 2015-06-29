@@ -76,13 +76,15 @@ void big_matrix_test()
     typedef int element_t;
 #endif
 
-    element_t (&a)[DIM1][DIM2] = (element_t (&)[DIM1][DIM2])*(new element_t[DIM1][DIM2]);
+    auto pa = new element_t[DIM1][DIM2];
+    element_t (&a)[DIM1][DIM2] = (element_t (&)[DIM1][DIM2])*pa;
     for (int j=0; j<DIM1; ++j)
         for (int i=0; i<DIM2; ++i)
             a[j][i] = element_t(dis(gen));
 
         
-    element_t (&b)[DIM2][DIM3] = (element_t (&)[DIM2][DIM3])*(new element_t[DIM2][DIM3]);
+    auto pb = new element_t[DIM2][DIM3];
+    element_t (&b)[DIM2][DIM3] = (element_t (&)[DIM2][DIM3])*pb;
     for (int j=0; j<DIM2; ++j)
         for (int i=0; i<DIM3; ++i)
             b[j][i] = element_t(dis(gen));
@@ -118,6 +120,9 @@ void big_matrix_test()
     auto r1 = time_it(multiply_row_oriented);
     std::cout << "Running column-oriented " << m3.cols << 'x' << m3.rows << " by " << m4.cols << 'x' << m4.rows << " multiplication: ";
     auto r2 = time_it(multiply_column_oriented);
+
+    delete[] pb;
+    delete[] pa;
 
     if (r1 != r2  &&  r2 != r3)
         throw std::runtime_error("all results are unequal");
